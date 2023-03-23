@@ -1,0 +1,19 @@
+# Python / Streamlit / Docker ignores
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+.env
+.DS_Store
+__MACOSX
+
+# Streamlit cache
+.streamlit/
+logs/
+
+# Docker
+*.log
+*.pid
+*.sock

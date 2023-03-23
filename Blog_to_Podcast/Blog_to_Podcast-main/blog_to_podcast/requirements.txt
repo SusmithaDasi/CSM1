@@ -1,0 +1,8 @@
+streamlit
+openai
+requests
+python-dotenv
+elevenlabs
+beautifulsoup4
+lxml
+html5lib

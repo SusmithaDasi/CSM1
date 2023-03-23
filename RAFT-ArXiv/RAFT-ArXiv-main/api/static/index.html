@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAFT ArXiv — Model Comparison</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f0; color: #1a1a1a; min-height: 100vh; }
+
+  header { background: #1a1a1a; color: #fff; padding: 20px 40px; display: flex; align-items: center; gap: 16px; }
+  header h1 { font-size: 18px; font-weight: 500; }
+  header span { font-size: 12px; background: #3c3489; color: #cecbf6; padding: 3px 10px; border-radius: 20px; }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+
+  .search-box { background: #fff; border: 1px solid #e0e0d8; border-radius: 12px; padding: 20px 24px; margin-bottom: 28px; }
+  .search-box label { font-size: 13px; color: #666; display: block; margin-bottom: 8px; }
+  .search-row { display: flex; gap: 12px; }
+  .search-row input {
+    flex: 1; padding: 10px 16px; border: 1px solid #ddd; border-radius: 8px;
+    font-size: 15px; outline: none; transition: border 0.2s;
+  }
+  .search-row input:focus { border-color: #7f77dd; }
+  .search-row button {
+    padding: 10px 24px; background: #3c3489; color: #fff; border: none;
+    border-radius: 8px; font-size: 14px; cursor: pointer; transition: background 0.2s; white-space: nowrap;
+  }
+  .search-row button:hover { background: #534ab7; }
+  .search-row button:disabled { background: #aaa; cursor: not-allowed; }
+
+  .examples { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .example-btn {
+    font-size: 12px; padding: 4px 12px; background: #f0efe8; border: 1px solid #ddd;
+    border-radius: 20px; cursor: pointer; color: #555; transition: all 0.15s;
+  }
+  .example-btn:hover { background: #eeedfe; border-color: #afa9ec; color: #3c3489; }
+
+  .status { font-size: 13px; color: #888; margin-bottom: 20px; min-height: 20px; }
+  .status.loading { color: #534ab7; }
+  .status.done { color: #0f6e56; }
+
+  .results { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+  .model-card { background: #fff; border: 1px solid #e0e0d8; border-radius: 12px; overflow: hidden; }
+  .model-card.winner { border-color: #1d9e75; }
+
+  .card-header { padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f0f0e8; }
+  .model-name { font-size: 14px; font-weight: 500; }
+  .model-badge { font-size: 11px; padding: 3px 10px; border-radius: 20px; }
+  .badge-base { background: #e1f5ee; color: #085041; }
+  .badge-raft { background: #eeedfe; color: #26215c; }
+  .badge-winner { background: #1d9e75; color: #fff; }
+
+  .card-body { padding: 20px; }
+  .answer-text { font-size: 14px; line-height: 1.7; color: #333; min-height: 80px; }
+  .answer-text.empty { color: #bbb; font-style: italic; }
+
+  .scores { margin-top: 16px; padding-top: 16px; border-top: 1px solid #f0f0e8; display: flex; gap: 16px; }
+  .score-item { flex: 1; }
+  .score-label { font-size: 11px; color: #999; margin-bottom: 4px; }
+  .score-bar-wrap { background: #f0efe8; border-radius: 4px; height: 6px; }
+  .score-bar { height: 6px; border-radius: 4px; background: #7f77dd; transition: width 0.6s ease; }
+  .score-bar.green { background: #1d9e75; }
+  .score-value { font-size: 12px; font-weight: 500; margin-top: 3px; color: #444; }
+
+  .retrieved { margin-top: 16px; padding-top: 16px; border-top: 1px solid #f0f0e8; }
+  .retrieved-label { font-size: 11px; color: #999; margin-bottom: 8px; }
+  .doc-chip { display: inline-block; font-size: 11px; background: #f5f5f0; border: 1px solid #e8e8e0; border-radius: 4px; padding: 3px 8px; margin: 2px 3px 2px 0; color: #555; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .empty-state { text-align: center; padding: 60px 20px; color: #aaa; }
+  .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; }
+
+  @media (max-width: 700px) { .results { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>RAFT ArXiv</h1>
+  <span>Model Comparison</span>
+</header>
+
+<div class="container">
+  <div class="search-box">
+    <label>Ask a question about AI/ML research</label>
+    <div class="search-row">
+      <input type="text" id="question" placeholder="e.g. What is retrieval augmented generation?" />
+      <button id="askBtn" onclick="ask()">Compare Models</button>
+    </div>
+    <div class="examples">
+      <span style="font-size:12px;color:#999;align-self:center;">Try:</span>
+      <button class="example-btn" onclick="setQ('What is retrieval augmented generation?')">What is RAG?</button>
+      <button class="example-btn" onclick="setQ('How does attention mechanism work in transformers?')">Attention mechanism</button>
+      <button class="example-btn" onclick="setQ('What are the benefits of fine-tuning large language models?')">Fine-tuning LLMs</button>
+      <button class="example-btn" onclick="setQ('What is prompt engineering?')">Prompt engineering</button>
+    </div>
+  </div>
+
+  <div class="status" id="status"></div>
+
+  <div id="results">
+    <div class="empty-state">
+      <div class="icon">⚡</div>
+      <p>Ask a question to compare Base RAG vs RAFT side by side</p>
+    </div>
+  </div>
+</div>
+
+<script>
+function setQ(q) {
+  document.getElementById('question').value = q;
+  ask();
+}
+
+async function ask() {
+  const question = document.getElementById('question').value.trim();
+  if (!question) return;
+
+  const btn    = document.getElementById('askBtn');
+  const status = document.getElementById('status');
+  btn.disabled = true;
+  status.className = 'status loading';
+  status.textContent = 'Querying both models...';
+
+  document.getElementById('results').innerHTML = `
+    <div class="model-card"><div class="card-body"><div class="answer-text empty">Loading Base RAG...</div></div></div>
+    <div class="model-card"><div class="card-body"><div class="answer-text empty">Loading RAFT...</div></div></div>
+  `;
+  document.getElementById('results').style.display = 'grid';
+
+  try {
+    const [baseRes, raftRes] = await Promise.all([
+      fetch('/rag/base', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({question}) }),
+      fetch('/rag/raft', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({question}) }),
+    ]);
+
+    const base = await baseRes.json();
+    const raft = await raftRes.json();
+
+    const baseLen = base.answer.length;
+    const raftLen = raft.answer.length;
+    const raftWins = raftLen > 20 && !raft.answer.includes("I don't know");
+
+    status.className = 'status done';
+    status.textContent = `Done — ${raftWins ? 'RAFT gave a more direct answer' : 'Both models answered'}`;
+
+    document.getElementById('results').innerHTML = `
+      <div class="model-card ${!raftWins ? 'winner' : ''}">
+        <div class="card-header">
+          <span class="model-name">Base RAG</span>
+          <div style="display:flex;gap:6px">
+            <span class="model-badge badge-base">Llama3</span>
+            ${!raftWins ? '<span class="model-badge badge-winner">Winner</span>' : ''}
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="answer-text">${base.answer}</div>
+          <div class="scores">
+            <div class="score-item">
+              <div class="score-label">Answer length</div>
+              <div class="score-bar-wrap"><div class="score-bar" style="width:${Math.min(100, baseLen/5)}%"></div></div>
+              <div class="score-value">${baseLen} chars</div>
+            </div>
+            <div class="score-item">
+              <div class="score-label">Docs retrieved</div>
+              <div class="score-bar-wrap"><div class="score-bar" style="width:${(base.retrieved.length/4)*100}%"></div></div>
+              <div class="score-value">${base.retrieved.length} docs</div>
+            </div>
+          </div>
+          <div class="retrieved">
+            <div class="retrieved-label">Retrieved documents</div>
+            ${base.retrieved.map(d => `<span class="doc-chip" title="${d.title}">${d.title}</span>`).join('')}
+          </div>
+        </div>
+      </div>
+
+      <div class="model-card ${raftWins ? 'winner' : ''}">
+        <div class="card-header">
+          <span class="model-name">RAFT</span>
+          <div style="display:flex;gap:6px">
+            <span class="model-badge badge-raft">phi-2 fine-tuned</span>
+            ${raftWins ? '<span class="model-badge badge-winner">Winner</span>' : ''}
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="answer-text">${raft.answer}</div>
+          <div class="scores">
+            <div class="score-item">
+              <div class="score-label">Answer length</div>
+              <div class="score-bar-wrap"><div class="score-bar green" style="width:${Math.min(100, raftLen/5)}%"></div></div>
+              <div class="score-value">${raftLen} chars</div>
+            </div>
+            <div class="score-item">
+              <div class="score-label">Docs retrieved</div>
+              <div class="score-bar-wrap"><div class="score-bar green" style="width:${(raft.retrieved.length/4)*100}%"></div></div>
+              <div class="score-value">${raft.retrieved.length} docs</div>
+            </div>
+          </div>
+          <div class="retrieved">
+            <div class="retrieved-label">Retrieved documents</div>
+            ${raft.retrieved.map(d => `<span class="doc-chip" title="${d.title}">${d.title}</span>`).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+  } catch(e) {
+    status.className = 'status';
+    status.textContent = 'Error — make sure the server is running';
+  }
+
+  btn.disabled = false;
+}
+
+document.getElementById('question').addEventListener('keydown', e => {
+  if (e.key === 'Enter') ask();
+});
+</script>
+</body>
+</html>
