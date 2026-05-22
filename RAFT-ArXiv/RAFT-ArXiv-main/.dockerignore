@@ -1,7 +1,0 @@
-venv/
-data/raw/
-data/processed/
-data/raft_dataset/
-__pycache__/
-*.pyc
-.git/
